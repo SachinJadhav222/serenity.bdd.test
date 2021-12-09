@@ -21,11 +21,27 @@ jobs:
           paths:
             - ~/.m2
           key: serenity.bdd.test-{{ checksum "pom.xml" }}
+      - run:
+          name: Download Selenium
+          command: |
+            curl -O http://selenium-release.storage.googleapis.com/3.5/selenium-server-standalone-3.5.3.jar
 
-      - run: mvn clean verify
+      - run:
+          name: Start Selenium
+          command: |
+            mkdir selenium-log
+            java -jar selenium-server-standalone-3.5.3.jar -log selenium-log/selenium.log
+            background: true
+
+        # run tests!
+      - run: mvn clean verify -P it -Dproperties=`pwd`/serenity-integration.properties
 
       - store_test_results:
           path: target/failsafe-reports
 
       - store_artifacts:
           path: target/site/serenity
+
+      - store_artifacts:
+          path: selenium-log/
+          destination: log
