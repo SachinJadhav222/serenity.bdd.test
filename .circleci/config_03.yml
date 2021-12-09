@@ -1,0 +1,43 @@
+version: 2
+jobs:
+  build:
+
+    working_directory: ~/serenity.bdd.test
+
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+      - image: selenium/hub:4.1.0
+      - image: selenium/standalone-chrome:96.0
+
+
+    steps:
+
+      - checkout
+
+      - restore_cache:
+
+          key: serenity.bdd.test-{{ checksum "pom.xml" }}
+
+      - run: mvn dependency:go-offline # gets the project dependencies
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: serenity.bdd.test-{{ checksum "pom.xml" }}
+
+      - run:
+          name: install selenium-hub
+          command: docker run -d --rm -p 5555:5555 --net grid --name selenium-hub selenium/hub:4.1.0
+
+      - run:
+          name: install selenium-node
+          command: docker run -d --rm --net grid -e HUB_HOST=selenium-hub -v /dev/shm:/dev/shm selenium/node-chrome:96.0
+
+
+      - run: mvn clean verify
+
+      - store_test_results:
+          path: target/failsafe-reports
+
+      - store_artifacts:
+          path: target/site/serenity

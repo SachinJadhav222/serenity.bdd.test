@@ -6,8 +6,7 @@ jobs:
 
     docker:
       - image: circleci/openjdk:8-jdk-stretch
-      - image: selenium/hub:4.1.0
-      - image: selenium/standalone-chrome:96.0
+
 
 
     steps:
@@ -20,19 +19,41 @@ jobs:
 
       - run: mvn dependency:go-offline # gets the project dependencies
 
+
+
+      - run:
+          name: Install latest version of ChromeDriver Sample
+          command: |
+            sudo wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+            sudo sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+            sudo apt-get update
+            sudo apt-get install google-chrome-unstable
+      - run:
+          name: Install latest version of ChromeDriver Sample
+          command: |
+            sudo wget https://chromedriver.storage.googleapis.com/2.31/chromedriver_linux64.zip
+            sudo unzip chromedriver_linux64.zip
+            sudo rm chromedriver_linux64.zip
+            sudo mv chromedriver /usr/bin/
+            sudo chmod 777 /usr/bin/chromedriver
+            sudo apt-get install libxi6 libgconf-2-4
+            sudo apt-get -y install xvfb gtk2-engines-pixbuf
+            sudo apt-get -y install xfonts-cyrillic xfonts-100dpi xfonts-75dpi xfonts-base xfonts-scalable
+            sudo apt-get install xvfb
+            sudo apt-get -y install imagemagick x11-apps
+      - run:
+          name: Running X virtual framebuffer
+          command: Xvfb :0 -ac &
+
+      - run:
+          name: Run Tests
+          command: |
+                  export DISPLAY=:99
+
       - save_cache:
           paths:
             - ~/.m2
           key: serenity.bdd.test-{{ checksum "pom.xml" }}
-
-      - run:
-          name: install selenium-hub
-          command: docker run -d --rm -p 5555:5555 --net grid --name selenium-hub selenium/hub:4.1.0
-
-      - run:
-          name: install selenium-node
-          command: docker run -d --rm --net grid -e HUB_HOST=selenium-hub -v /dev/shm:/dev/shm selenium/node-chrome:96.0
-
 
       - run: mvn clean verify
 
